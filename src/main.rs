@@ -1,43 +1,65 @@
-use std::fs;
+use eframe::App;
+use eframe::NativeOptions;
+use nfd::Response;
+use std::path::PathBuf;
 
-fn main() {
-    // Get the current directory
-    let current_dir = std::env::current_dir().expect("Unable to get current directory");
+mod logic;
 
-    // Define the path to the 'files' folder
-    let files_folder_path = current_dir.join("files");
+fn main() -> Result<(), eframe::Error> {
+    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
-    // Read the 'files' folder
-    if let Ok(entries) = fs::read_dir(&files_folder_path) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let file_path = entry.path();
-                if let Some(file_name) = file_path.file_name() {
-                    if let Some(file_name_str) = file_name.to_str() {
-                        // Check if the file name contains 'en'
-                        if file_name_str.contains("en") {
-                            // Create a new folder if it doesn't exist
-                            let new_folder_path = current_dir.join("en_files");
-                            if !new_folder_path.exists() {
-                                fs::create_dir(&new_folder_path)
-                                    .expect("Unable to create new folder");
-                            }
+    let options = NativeOptions {
+        initial_window_size: Some(egui::vec2(320.0, 240.0)),
+        ..Default::default()
+    };
 
-                            // Move the file to the new folder
-                            let new_file_path = new_folder_path.join(file_name);
-                            if let Err(err) = fs::rename(&file_path, &new_file_path) {
-                                eprintln!("Error moving file: {}", err);
-                            } else {
-                                println!(
-                                    "Moved {} to {}",
-                                    file_name_str,
-                                    new_folder_path.display()
-                                );
-                            }
-                        }
+    let app = FileSorterApp {
+        selected_directory: None,
+    };
+
+    eframe::run_native("File Sorter", options, Box::new(move |_cc| Box::new(app)))
+}
+
+struct FileSorterApp {
+    selected_directory: Option<PathBuf>,
+}
+
+impl App for FileSorterApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("File Sorter");
+
+            ui.horizontal(|ui| {
+                let select_dir_button = ui.button("Select Directory");
+                select_dir_button
+                    .clone()
+                    .on_hover_text("Select a directory");
+
+                if select_dir_button.clicked() {
+                    if let Response::Okay(path) = nfd::open_pick_folder(None).unwrap() {
+                        self.selected_directory = Some(PathBuf::from(path));
                     }
                 }
-            }
-        }
+
+                if let Some(selected_dir) = &self.selected_directory {
+                    ui.label(format!("Selected Directory: {}", selected_dir.display()));
+                } else {
+                    ui.label("No directory selected.");
+                }
+            });
+
+            ui.horizontal(|ui| {
+                let run_button = ui.button("Run");
+                run_button
+                    .clone()
+                    .on_hover_text("Run the file sorting logic");
+
+                if run_button.clicked() {
+                    if let Some(selected_dir) = &self.selected_directory {
+                        logic::run_file_sorter(selected_dir);
+                    }
+                }
+            });
+        });
     }
 }
