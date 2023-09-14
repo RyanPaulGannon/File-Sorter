@@ -13,22 +13,22 @@ fn main() -> Result<(), eframe::Error> {
         ..Default::default()
     };
 
-    let app = FileSorterApp {
+    let app = OrdinamentoApp {
         selected_directory: None,
         filter_text: String::from("Enter filter"),
         target_directory: String::from("Pick your folder name"),
     };
 
-    eframe::run_native("File Sorter", options, Box::new(move |_cc| Box::new(app)))
+    eframe::run_native("Ordinamento", options, Box::new(move |_cc| Box::new(app)))
 }
 
-struct FileSorterApp {
+struct OrdinamentoApp {
     selected_directory: Option<PathBuf>,
     filter_text: String,
     target_directory: String,
 }
 
-impl App for FileSorterApp {
+impl App for OrdinamentoApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("File Sorter");
