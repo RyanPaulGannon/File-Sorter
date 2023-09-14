@@ -6,7 +6,7 @@ use std::path::PathBuf;
 mod logic;
 
 fn main() -> Result<(), eframe::Error> {
-    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+    env_logger::init();
 
     let options = NativeOptions {
         initial_window_size: Some(egui::vec2(320.0, 240.0)),
@@ -15,6 +15,8 @@ fn main() -> Result<(), eframe::Error> {
 
     let app = FileSorterApp {
         selected_directory: None,
+        filter_text: String::from("Enter filter"),
+        target_directory: String::from("Pick your folder name"),
     };
 
     eframe::run_native("File Sorter", options, Box::new(move |_cc| Box::new(app)))
@@ -22,12 +24,24 @@ fn main() -> Result<(), eframe::Error> {
 
 struct FileSorterApp {
     selected_directory: Option<PathBuf>,
+    filter_text: String,
+    target_directory: String,
 }
 
 impl App for FileSorterApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("File Sorter");
+
+            ui.horizontal(|ui| {
+                ui.label("Filter by:");
+                ui.text_edit_singleline(&mut self.filter_text);
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("Target Directory:");
+                ui.text_edit_singleline(&mut self.target_directory);
+            });
 
             ui.horizontal(|ui| {
                 let select_dir_button = ui.button("Select Directory");
@@ -56,7 +70,11 @@ impl App for FileSorterApp {
 
                 if run_button.clicked() {
                     if let Some(selected_dir) = &self.selected_directory {
-                        logic::run_file_sorter(selected_dir);
+                        logic::filter_and_move_files(
+                            selected_dir,
+                            &self.filter_text,
+                            &self.target_directory,
+                        );
                     }
                 }
             });
